@@ -211,10 +211,12 @@ const DEMO = (() => {
 function showAuth() {
   $("auth").hidden = false;
   $("dash").hidden = true;
+  $("nav").hidden = true;
 }
 function showDash() {
   $("auth").hidden = true;
   $("dash").hidden = false;
+  $("nav").hidden = false;
 }
 
 async function refreshDashboard() {
@@ -234,6 +236,7 @@ async function refreshDashboard() {
   renderSubscriptions();
   renderFriends();
   renderActivity();
+  showDash();
 }
 
 function renderProfile() {
@@ -495,9 +498,9 @@ document.querySelectorAll("nav a").forEach((a) => {
   }
 
   if (token) {
-    await refreshDashboard();
-    if (token) showDash();
+    await refreshDashboard(); // shows dash only if the token is still valid
+  } else {
+    showAuth();
   }
-  showAuth();
   addChat("ai", "Hi! I'm GoAI. Ask me about your games, USB health or performance.");
 })();
