@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GoConsoleOS Account</title>
+<meta name="description" content="GoConsoleOS Account Center - manage your profile, devices, subscriptions, wallet and security." />
+<link rel="stylesheet" href="acc.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%2300C9DB'/></svg>" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">G</div>
+    <div>
+      <div class="brand-name">GoConsoleOS</div>
+      <div class="brand-sub">Account Center</div>
+    </div>
+  </div>
+  <nav id="nav">
+    <a href="#profile">Profile</a>
+    <a href="#devices">Devices</a>
+    <a href="#security">Security</a>
+    <a href="#wallet">Wallet</a>
+    <a href="#subscriptions">Subscriptions</a>
+    <a href="#friends">Friends</a>
+    <a href="#activity">Activity</a>
+  </nav>
+  <div class="topbar-right">
+    <button id="btnSignout" class="ghost" hidden>Sign out</button>
+    <button id="btnUser" class="user-chip" hidden></button>
+  </div>
+</header>
+
+<main>
+  <!-- ---------- Auth screens ---------- -->
+  <section id="auth" class="auth-wrap">
+    <div class="card auth-card">
+      <div class="auth-tabs">
+        <button id="tabSignin" class="tab active">Sign in</button>
+        <button id="tabSignup" class="tab">Create account</button>
+      </div>
+
+      <form id="formSignin" class="auth-form">
+        <h2>Sign in to GoConsoleOS</h2>
+        <p class="muted">Use your account across GoConsoleOS, USB consoles, Android and the web.</p>
+        <label>Username <input id="siUser" autocomplete="username" required /></label>
+        <label>Password <input id="siPass" type="password" autocomplete="current-password" required /></label>
+        <div id="siError" class="error" hidden></div>
+        <button class="primary" type="submit">Sign in</button>
+        <p class="muted small">Powered by the GoConsoleOS server on your console (port 39210).</p>
+      </form>
+
+      <form id="formSignup" class="auth-form" hidden>
+        <h2>Create your account</h2>
+        <p class="muted">Register a GoConsoleOS account - one identity for consoles, USB devices and the cloud.</p>
+        <label>Username <input id="suUser" autocomplete="username" required /></label>
+        <label>Display name <input id="suDisplay" /></label>
+        <label>Email (optional) <input id="suEmail" type="email" /></label>
+        <label>Password <input id="suPass" type="password" autocomplete="new-password" required /></label>
+        <div id="suError" class="error" hidden></div>
+        <button class="primary" type="submit">Create account</button>
+      </form>
+
+      <div id="serverInfo" class="server-info"></div>
+    </div>
+  </section>
+
+  <!-- ---------- Dashboard ---------- -->
+  <section id="dash" hidden>
+    <div class="hero">
+      <div>
+        <h1>Welcome back, <span id="dName"></span></h1>
+        <p id="dHandle" class="muted"></p>
+      </div>
+      <div class="hero-badge">
+        <div id="dPoints" class="points">0</div>
+        <div class="muted small">GoPoints</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="profile">
+        <h3>Profile</h3>
+        <div class="avatar-row">
+          <div id="dAvatar" class="avatar">G</div>
+          <div>
+            <div id="dBio" class="muted"></div>
+            <div id="dEmail" class="muted small"></div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <label>Display name <input id="pDisplay" /></label>
+          <label>Bio <input id="pBio" /></label>
+          <label>Email <input id="pEmail" type="email" /></label>
+          <label>Locale <input id="pLocale" /></label>
+        </div>
+        <button id="btnSaveProfile" class="primary">Save profile</button>
+      </div>
+
+      <div class="card" id="devices">
+        <h3>Devices</h3>
+        <div id="deviceList" class="list"></div>
+        <div class="row">
+          <input id="devName" placeholder="Device name (e.g. Living Room USB)" />
+          <select id="devKind">
+            <option value="console">Console</option>
+            <option value="usb">USB Console</option>
+            <option value="android">Android</option>
+            <option value="web">Web</option>
+          </select>
+          <button id="btnAddDevice" class="primary">Add</button>
+        </div>
+      </div>
+
+      <div class="card" id="security">
+        <h3>Security</h3>
+        <div class="row">
+          <span>Two-factor authentication</span>
+          <label class="switch">
+            <input id="t2fa" type="checkbox" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="muted small">2FA adds a second step to sign in, protecting your account on portable USB consoles.</p>
+      </div>
+
+      <div class="card" id="wallet">
+        <h3>Wallet</h3>
+        <div class="points-big" id="wPoints">0</div>
+        <div class="row">
+          <input id="addPoints" type="number" min="0" value="50" />
+          <button id="btnAddPoints" class="primary">Add points</button>
+        </div>
+      </div>
+
+      <div class="card" id="subscriptions">
+        <h3>Subscriptions</h3>
+        <div id="subList" class="list"></div>
+        <div class="row">
+          <select id="subPlan">
+            <option value="free">Free</option>
+            <option value="basic">Basic</option>
+            <option value="plus">Plus</option>
+            <option value="pro">Pro</option>
+          </select>
+          <button id="btnSub" class="primary">Subscribe</button>
+        </div>
+      </div>
+
+      <div class="card" id="friends">
+        <h3>Friends</h3>
+        <div id="friendList" class="list"></div>
+        <div class="row">
+          <input id="friendName" placeholder="Add by username" />
+          <button id="btnAddFriend" class="primary">Add</button>
+        </div>
+      </div>
+
+      <div class="card wide" id="activity">
+        <h3>Recent activity</h3>
+        <div id="activityList" class="list"></div>
+      </div>
+
+      <div class="card wide" id="goai">
+        <h3>GoAI assistant</h3>
+        <div id="goaiLog" class="chat-log"></div>
+        <div class="row">
+          <input id="goaiInput" placeholder="Ask GoAI about games, USB health, performance..." />
+          <button id="btnGoAi" class="primary">Send</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  GoConsoleOS Account Center &middot; GoStudios &middot; runs on your console at port 39210 &middot; mirrored on GitHub Pages
+</footer>
+
+<script src="acc.js"></script>
+</body>
+</html>
