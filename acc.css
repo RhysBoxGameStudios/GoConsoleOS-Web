@@ -107,6 +107,25 @@ nav a:hover { background: rgba(0, 201, 219, 0.12); color: var(--accent); }
 }
 .auth-form input:focus { outline: none; border-color: var(--accent); }
 
+.pw-wrap { position: relative; margin-top: 6px; }
+.pw-wrap input { margin-top: 0; padding-right: 44px; }
+.pw-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 8px;
+  line-height: 1;
+}
+.pw-toggle:hover { color: var(--accent); background: rgba(255, 255, 255, 0.06); }
+
 button.primary {
   margin-top: 18px;
   width: 100%;

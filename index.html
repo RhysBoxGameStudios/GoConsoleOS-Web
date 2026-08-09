@@ -45,7 +45,12 @@
         <h2>Sign in to GoConsoleOS</h2>
         <p class="muted">Use your account across GoConsoleOS, USB consoles, Android and the web.</p>
         <label>Username <input id="siUser" autocomplete="username" required /></label>
-        <label>Password <input id="siPass" type="password" autocomplete="current-password" required /></label>
+        <label>Password
+          <div class="pw-wrap">
+            <input id="siPass" type="password" autocomplete="current-password" required />
+            <button type="button" class="pw-toggle" data-target="siPass" aria-label="Show password">&#128065;</button>
+          </div>
+        </label>
         <div id="siError" class="error" hidden></div>
         <button class="primary" type="submit">Sign in</button>
         <p class="muted small">Powered by the GoConsoleOS server on your console (port 39210).</p>
@@ -57,7 +62,12 @@
         <label>Username <input id="suUser" autocomplete="username" required /></label>
         <label>Display name <input id="suDisplay" /></label>
         <label>Email (optional) <input id="suEmail" type="email" /></label>
-        <label>Password <input id="suPass" type="password" autocomplete="new-password" required /></label>
+        <label>Password
+          <div class="pw-wrap">
+            <input id="suPass" type="password" autocomplete="new-password" required />
+            <button type="button" class="pw-toggle" data-target="suPass" aria-label="Show password">&#128065;</button>
+          </div>
+        </label>
         <div id="suError" class="error" hidden></div>
         <button class="primary" type="submit">Create account</button>
       </form>

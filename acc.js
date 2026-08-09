@@ -465,6 +465,21 @@ $("tabSignup").onclick = () => {
 
 $("formSignin").onsubmit = doSignin;
 $("formSignup").onsubmit = doSignup;
+
+/* password show/hide toggles */
+document.querySelectorAll(".pw-toggle").forEach((btn) => {
+  btn.onclick = () => {
+    const input = $(btn.dataset.target);
+    if (!input) return;
+    if (input.type === "password") {
+      input.type = "text";
+      btn.innerHTML = "&#128064;"; // eye-off
+    } else {
+      input.type = "password";
+      btn.innerHTML = "&#128065;"; // eye
+    }
+  };
+});
 $("btnSignout").onclick = signout;
 $("btnSaveProfile").onclick = saveProfile;
 $("btnAddDevice").onclick = addDevice;
