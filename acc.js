@@ -15,15 +15,33 @@ const $ = (id) => document.getElementById(id);
 let token = localStorage.getItem("gcos_token") || "";
 let profile = null;
 
+let remote = true; // set false when the console can't be reached -> demo store
+
 const api = {
   async call(endpoint, method = "GET", body = null, base = CONSOLE) {
-    const opt = { method, headers: { "Content-Type": "application/json" } };
-    if (body) opt.body = JSON.stringify(body);
-    const res = await fetch(base + "/api/acc/" + endpoint, opt);
-    const data = await res.json().catch(() => ({}));
-    return data;
+    if (!remote) return DEMO.call(endpoint, method, body);
+    let url = base + "/api/acc/" + endpoint;
+    const opt = { method, headers: {} };
+    if (method === "GET" && body && body.token) {
+      // browsers don't allow a body on GET; carry the token in the query string
+      url += "?token=" + encodeURIComponent(body.token);
+      body = null;
+    }
+    if (method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE") {
+      opt.headers["Content-Type"] = "application/json";
+      if (body) opt.body = JSON.stringify(body);
+    }
+    let res;
+    try {
+      res = await fetch(url, opt);
+    } catch {
+      remote = false;
+      return DEMO.call(endpoint, method, body);
+    }
+    return res.json().catch(() => ({}));
   },
   async goai(message) {
+    if (!remote) return DEMO.goai(message);
     const res = await fetch(CONSOLE + "/api/goai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -33,9 +51,160 @@ const api = {
   },
   async info() {
     const res = await fetch(CONSOLE + "/api/info").catch(() => null);
-    return res ? res.json().catch(() => null) : null;
+    if (!res) { remote = false; return null; }
+    const data = await res.json().catch(() => null);
+    if (!data) { remote = false; return null; }
+    remote = true;
+    return data;
   },
 };
+
+/* ---------- demo store (localStorage fallback when no console is reachable) ---------- */
+
+const DEMO = (() => {
+  const KEY = "gcos_demo_db";
+  const load = () => {
+    try { return JSON.parse(localStorage.getItem(KEY)) || { users: {}, sessions: {} }; }
+    catch { return { users: {}, sessions: {} }; }
+  };
+  const save = (db) => localStorage.setItem(KEY, JSON.stringify(db));
+  const uid = (p) => p + Math.random().toString(36).slice(2, 10);
+  const toView = (u) => ({
+    id: u.id, username: u.username, displayName: u.displayName,
+    email: u.email, avatar: u.avatar || "", bio: u.bio || "",
+    twoFactorEnabled: u.twoFactorEnabled || false, emailVerified: u.emailVerified || false,
+    locale: u.locale || "en-US", theme: u.theme || "dark", goPoints: u.goPoints || 0,
+    createdAt: u.createdAt, friendIds: u.friendIds || [],
+    devices: u.devices || [], subscriptions: u.subscriptions || [], activity: u.activity || [],
+  });
+  const err = (error) => ({ ok: false, error });
+
+  return {
+    call(endpoint, method, body = {}) {
+      const db = load();
+      const b = body || {};
+      const userByToken = () => {
+        const t = b.token;
+        if (!t) return null;
+        const name = db.sessions[t];
+        return name ? db.users[name] || null : null;
+      };
+      const saveUser = (u) => { db.users[u.username] = u; save(db); };
+
+      if (endpoint === "register" && method === "POST") {
+        const username = (b.username || "").trim().toLowerCase();
+        if (!username || !b.password) return Promise.resolve(err("username and password are required"));
+        if ((b.password || "").length < 4) return Promise.resolve(err("password must be at least 4 characters"));
+        if (db.users[username]) return Promise.resolve(err("username already taken"));
+        const u = {
+          id: uid("u_"), username, displayName: b.displayName || username,
+          email: b.email || "", password: String(b.password),
+          bio: "", locale: "en-US", theme: "dark",
+          twoFactorEnabled: false, emailVerified: false, goPoints: 100,
+          createdAt: new Date().toISOString(), friendIds: [], devices: [], subscriptions: [], activity: [],
+        };
+        db.users[username] = u;
+        const token = uid("t_");
+        db.sessions[token] = username;
+        save(db);
+        return Promise.resolve({ ok: true, token, profile: toView(u) });
+      }
+
+      if (endpoint === "login" && method === "POST") {
+        const username = (b.username || "").trim().toLowerCase();
+        const u = db.users[username];
+        if (!u || u.password !== b.password) return Promise.resolve(err("invalid username or password"));
+        const token = uid("t_");
+        db.sessions[token] = username;
+        save(db);
+        return Promise.resolve({ ok: true, token, profile: toView(u) });
+      }
+
+      if (endpoint === "logout" && method === "POST") {
+        delete db.sessions[b.token];
+        save(db);
+        return Promise.resolve({ ok: true });
+      }
+
+      const user = userByToken();
+      if (!user) return Promise.resolve(err("not authenticated"));
+
+      if (endpoint === "profile") {
+        if (method === "GET") return Promise.resolve({ ok: true, profile: toView(user) });
+        if (method === "PATCH") {
+          if (b.displayName != null) user.displayName = b.displayName;
+          if (b.bio != null) user.bio = b.bio;
+          if (b.email != null) user.email = b.email;
+          if (b.locale != null) user.locale = b.locale;
+          if (b.twoFactorEnabled != null) user.twoFactorEnabled = !!b.twoFactorEnabled;
+          saveUser(user);
+          return Promise.resolve({ ok: true, profile: toView(user) });
+        }
+      }
+
+      if (endpoint === "devices") {
+        if (method === "GET") return Promise.resolve({ ok: true, devices: user.devices || [] });
+        if (method === "POST") {
+          const dev = { id: uid("d_"), name: b.name || "GoConsoleOS Device", kind: b.kind || "console", os: b.os || "GoConsoleOS", lastSeen: new Date().toISOString() };
+          user.devices = user.devices || [];
+          user.devices.push(dev);
+          saveUser(user);
+          return Promise.resolve({ ok: true, device: dev });
+        }
+        const id = endpoint.split("/")[1];
+        if (method === "DELETE" && id) {
+          user.devices = (user.devices || []).filter((d) => d.id !== id);
+          saveUser(user);
+          return Promise.resolve({ ok: true });
+        }
+      }
+
+      if (endpoint === "subscriptions") {
+        if (method === "POST") {
+          const startedAt = new Date().toISOString();
+          const sub = {
+            id: uid("s_"), plan: b.plan, tier: b.plan, isActive: true,
+            startedAt, expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+          };
+          user.subscriptions = user.subscriptions || [];
+          user.subscriptions.push(sub);
+          saveUser(user);
+        }
+        return Promise.resolve({ ok: true, subscriptions: user.subscriptions || [] });
+      }
+
+      if (endpoint === "activity")
+        return Promise.resolve({ ok: true, activity: user.activity || [] });
+
+      if (endpoint === "wallet") {
+        if (method === "POST") {
+          const amt = parseInt(b.points, 10) || 0;
+          user.goPoints = Math.max(0, (user.goPoints || 0) + amt);
+          saveUser(user);
+        }
+        return Promise.resolve({ ok: true, points: user.goPoints || 0 });
+      }
+
+      if (endpoint === "friends" && method === "POST") {
+        const target = (b.username || "").trim().toLowerCase();
+        if (!db.users[target]) return Promise.resolve(err("user not found"));
+        user.friendIds = user.friendIds || [];
+        if (!user.friendIds.includes(target)) user.friendIds.push(target);
+        saveUser(user);
+        return Promise.resolve({ ok: true, friends: user.friendIds });
+      }
+
+      return Promise.resolve(err("unknown acc endpoint"));
+    },
+    goai(message) {
+      const m = String(message || "").toLowerCase();
+      if (m.includes("game")) return { reply: "Demo mode: I'd suggest checking your GoGames library on the console.", suggestions: ["usb health", "performance"] };
+      if (m.includes("usb")) return { reply: "Demo mode: your USB drive looks healthy from here.", suggestions: ["my games", "performance"] };
+      if (m.includes("performance")) return { reply: "Demo mode: the console is running smoothly.", suggestions: ["my games", "usb health"] };
+      return { reply: "Demo mode: connect to your GoConsoleOS console at http://localhost:39210 for the full GoAI experience.", suggestions: ["my games", "usb health"] };
+    },
+  };
+})();
 
 /* ---------- auth flow ---------- */
 
