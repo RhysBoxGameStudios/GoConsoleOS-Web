@@ -159,6 +159,10 @@ const DEMO = (() => {
         }
       }
 
+      if (endpoint === "map") {
+        return Promise.resolve({ ok: true, self: null, devices: user.devices || [] });
+      }
+
       if (endpoint === "subscriptions") {
         if (method === "POST") {
           const startedAt = new Date().toISOString();
@@ -231,6 +235,7 @@ async function refreshDashboard() {
   token = profile ? token : token;
   renderProfile();
   renderDevices();
+  renderMap();
   renderSecurity();
   renderWallet();
   renderSubscriptions();
@@ -274,6 +279,67 @@ function renderDevices() {
       refreshDashboard();
     };
   });
+}
+
+let _map = null;
+
+async function renderMap() {
+  const status = $("mapStatus");
+  if (typeof L === "undefined") {
+    status.textContent = "Map library not loaded - connect this page to your console over the internet to see locations.";
+    return;
+  }
+  const data = await api.call("map", "GET", { token });
+  if (!data.ok) { status.textContent = "Map data unavailable."; return; }
+
+  const markers = [];
+  if (data.self) {
+    markers.push({
+      lat: data.self.lat, lng: data.self.lng,
+      title: "This console", city: data.self.city, country: data.self.country,
+      color: "accent",
+    });
+  }
+  (data.devices || []).forEach((d) => {
+    if (typeof d.latitude === "number" && typeof d.longitude === "number" && (d.latitude || d.longitude)) {
+      markers.push({
+        lat: d.latitude, lng: d.longitude,
+        title: d.name, city: d.city, country: d.country,
+        color: "device",
+      });
+    }
+  });
+
+  if (!markers.length) {
+    status.textContent = "No location yet - the console resolves its own location when it can reach the internet. Try again in a few seconds.";
+    return;
+  }
+
+  if (!_map) {
+    _map = L.map("consoleMap").setView([markers[0].lat, markers[0].lng], 4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(_map);
+  }
+  _map.eachLayer((l) => { if (l.options && l.options.plotId) _map.removeLayer(l); });
+
+  markers.forEach((m) => {
+    const icon = L.divIcon({
+      className: "",
+      html: "<div style='width:14px;height:14px;border-radius:50%;border:2px solid #fff;background:" +
+        (m.color === "accent" ? "#00c9db" : "#7c5cff") + ";box-shadow:0 0 6px rgba(0,0,0,.6)'></div>",
+      iconSize: [14, 14], iconAnchor: [7, 7],
+    });
+    L.marker([m.lat, m.lng], { icon, plotId: true })
+      .addTo(_map)
+      .bindPopup("<strong>" + esc(m.title) + "</strong><br/>" +
+        [m.city, m.country].filter(Boolean).join(", ") || "Unknown location");
+  });
+
+  if (markers.length === 1) _map.setView([markers[0].lat, markers[0].lng], 4);
+  else _map.fitBounds(markers.map((m) => [m.lat, m.lng]), { padding: [30, 30] });
+  status.textContent = markers.length + (markers.length === 1 ? " location plotted." : " locations plotted.");
 }
 
 function renderSecurity() {

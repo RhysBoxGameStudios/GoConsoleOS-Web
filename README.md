@@ -1,5 +1,11 @@
 # GoConsoleOS-Web
 
+<p align="center">
+  <img src="assets/banner.svg" alt="GoConsoleOS Account Center" width="100%" />
+  <br/>
+  <img src="assets/logo.svg" alt="GoConsoleOS Web logo" width="280" />
+</p>
+
 **GoConsoleOS Account Center (ACC)** — the web home of the GoConsoleOS account system.
 
 Hosted on GitHub Pages at <https://rhysboxgamestudios.github.io/GoConsoleOS-Web/>
@@ -11,6 +17,7 @@ A full account dashboard in the style of a modern Microsoft account page:
 - **Sign in / Create account** (tabs)
 - **Profile** — display name, bio, email, locale
 - **Devices** — register and remove consoles (USB, Android, web)
+- **Console map** — a live map (Leaflet + OpenStreetMap) showing where your USB consoles and devices are right now, resolved from their public IPs
 - **Security** — two-factor authentication toggle
 - **Wallet** — GoPoints balance, add points
 - **Subscriptions** — Free / Basic / Plus / Pro tiers
@@ -42,3 +49,11 @@ If no console is reachable the UI still renders and explains how to connect.
 - **GoConsoleOS** — desktop USB gaming console (GoConsole.exe / GoConsoleOS.exe) with the built-in server
 - **GoConsoleOS-Android** — portable companion app with an on-device server too
 - **GoConsoleOS-Web** — this site
+
+---
+
+## License
+
+Copyright © 2026 GoStudios. All rights reserved.
+
+**GoConsoleOS™** and the **GoConsoleOS logo** are trademarks of GoStudios. Map tiles © OpenStreetMap contributors (ODbL).

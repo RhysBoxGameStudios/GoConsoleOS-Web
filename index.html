@@ -6,6 +6,7 @@
 <title>GoConsoleOS Account</title>
 <meta name="description" content="GoConsoleOS Account Center - manage your profile, devices, subscriptions, wallet and security." />
 <link rel="stylesheet" href="acc.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%2300C9DB'/></svg>" />
 </head>
 <body>
@@ -20,6 +21,7 @@
   <nav id="nav">
     <a href="#profile">Profile</a>
     <a href="#devices">Devices</a>
+    <a href="#map">Map</a>
     <a href="#security">Security</a>
     <a href="#wallet">Wallet</a>
     <a href="#subscriptions">Subscriptions</a>
@@ -123,6 +125,13 @@
         </div>
       </div>
 
+      <div class="card wide" id="map">
+        <h3>Console map</h3>
+        <p class="muted small">Where your GoConsoleOS consoles and devices are right now. This console resolves its own location by IP and plots every registered device.</p>
+        <div id="consoleMap" class="map"></div>
+        <div id="mapStatus" class="map-status"></div>
+      </div>
+
       <div class="card" id="security">
         <h3>Security</h3>
         <div class="row">
@@ -188,6 +197,7 @@
   GoConsoleOS Account Center &middot; GoStudios &middot; runs on your console at port 39210 &middot; mirrored on GitHub Pages
 </footer>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="acc.js"></script>
 </body>
 </html>

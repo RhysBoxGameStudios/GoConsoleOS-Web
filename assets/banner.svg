@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A0F1E"/><stop offset="1" stop-color="#14233F"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00C9DB" stop-opacity="0"/><stop offset="0.5" stop-color="#00C9DB" stop-opacity="0.35"/><stop offset="1" stop-color="#00C9DB" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="320" fill="url(#bg)"/>
+  <rect x="40" y="40" width="1200" height="240" rx="24" fill="none" stroke="#00C9DB" stroke-opacity="0.5" stroke-width="3"/>
+  <rect width="1280" height="6" fill="#00C9DB"/>
+  <circle cx="1190" cy="80" r="70" fill="#00C9DB" opacity="0.12"/>
+  <circle cx="90" cy="270" r="90" fill="#7C5CFF" opacity="0.10"/>
+  <rect y="300" width="1280" height="20" fill="url(#glow)"/>
+  <text x="640" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">GoConsoleOS Account Center</text>
+  <text x="640" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="#aeb9d6" text-anchor="middle" letter-spacing="1">Your console's account dashboard, on the web</text>
+  <text x="640" y="262" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#00C9DB" text-anchor="middle" font-weight="600">GoConsoleOS - GoStudios</text>
+</svg>
