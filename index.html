@@ -154,17 +154,50 @@
       </div>
 
       <div class="card" id="subscriptions">
-        <h3>Subscriptions</h3>
+        <h3>GoConsole Game Pass</h3>
+        <div class="row" style="gap:8px;flex-wrap:wrap" id="planPicker"></div>
         <div id="subList" class="list"></div>
         <div class="row">
           <select id="subPlan">
-            <option value="free">Free</option>
-            <option value="basic">Basic</option>
-            <option value="plus">Plus</option>
-            <option value="pro">Pro</option>
+            <option value="pro">Game Pass Pro</option>
+            <option value="plus">Game Pass Plus</option>
+            <option value="premium">Game Pass Premium</option>
+            <option value="ultimate">Game Pass Ultimate</option>
+          </select>
+          <input id="subAmount" type="number" min="1" value="1" style="width:70px" />
+          <select id="subUnit">
+            <option value="days">Days</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
           </select>
           <button id="btnSub" class="primary">Subscribe</button>
         </div>
+        <div class="row" style="margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+          <input id="gcCode" placeholder="Redeem gift card (GC-XXXX-XXXX-XXXX)" style="flex:1" />
+          <button id="btnRedeem" class="primary">Redeem</button>
+        </div>
+        <div id="gcMsg" class="meta" style="margin-top:8px"></div>
+      </div>
+
+      <div class="card" id="giftcards">
+        <h3>Gift card generator</h3>
+        <div class="row">
+          <select id="genPlan">
+            <option value="pro">Game Pass Pro</option>
+            <option value="plus">Game Pass Plus</option>
+            <option value="premium">Game Pass Premium</option>
+            <option value="ultimate">Game Pass Ultimate</option>
+          </select>
+          <input id="genAmount" type="number" min="1" value="30" style="width:80px" />
+          <select id="genUnit">
+            <option value="days">Days</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+          </select>
+          <input id="genCount" type="number" min="1" max="50" value="1" style="width:70px" />
+          <button id="btnGen" class="primary">Generate</button>
+        </div>
+        <div id="genList" class="list" style="margin-top:12px"></div>
       </div>
 
       <div class="card" id="friends">

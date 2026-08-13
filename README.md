@@ -1,59 +1,51 @@
-# GoConsoleOS-Web
+# GoConsoleOS Account Center (web)
 
-<p align="center">
-  <img src="assets/banner.svg" alt="GoConsoleOS Account Center" width="100%" />
-  <br/>
-  <img src="assets/logo.svg" alt="GoConsoleOS Web logo" width="280" />
-</p>
+The GoConsoleOS ACC (Account, Cloud & Community) web app. It is served two ways:
 
-**GoConsoleOS Account Center (ACC)** — the web home of the GoConsoleOS account system.
+1. **From your console** — the GoConsoleOS server inside `GoConsole.exe` /
+   `GoConsoleOS.exe` hosts this site at `http://<console-ip>:39210/` together
+   with the `/api/acc/*` REST API and the `/api/goai` assistant.
+2. **From GitHub Pages** — a static mirror for preview / marketing. Point it at a
+   console with `?host=192.168.1.10`.
 
-Hosted on GitHub Pages at <https://rhysboxgamestudios.github.io/GoConsoleOS-Web/>
+## Features
 
-## What it does
+- Sign in / create account (password hashing, session tokens)
+- Profile (display name, bio, email, locale, avatar)
+- Devices (register / remove your USB consoles, Android, web)
+- Security (two-factor toggle)
+- Wallet (GoPoints)
+- Subscriptions (GoConsole Game Pass: Pro / Plus / Premium / Ultimate) with
+  day / month / year durations and stacking
+- Gift cards (generate + redeem codes, e.g. `GC-XXXX-XXXX-XXXX`)
+- Friends
+- Activity log
+- GoAI chat assistant (runs on the console, fully offline)
 
-A full account dashboard in the style of a modern Microsoft account page:
+## API
 
-- **Sign in / Create account** (tabs)
-- **Profile** — display name, bio, email, locale
-- **Devices** — register and remove consoles (USB, Android, web)
-- **Console map** — a live map (Leaflet + OpenStreetMap) showing where your USB consoles and devices are right now, resolved from their public IPs
-- **Security** — two-factor authentication toggle
-- **Wallet** — GoPoints balance, add points
-- **Subscriptions** — Free / Basic / Plus / Pro tiers
-- **Friends** — add by username
-- **Activity** — recent account events
-- **GoAI** — the gaming assistant, chat right in the browser
+All endpoints are `POST/GET/PATCH/DELETE` against `/api/acc/*` on port `39210`.
+Authenticated calls send `{ "token": "<session>" }` in the JSON body.
 
-## How it connects
+- `POST /api/acc/register`  `{username, displayName, email, password}`
+- `POST /api/acc/login`     `{username, password}` -> `{token, profile}`
+- `POST /api/acc/logout`    `{token}`
+- `GET/PATCH /api/acc/profile` `{token, ...fields}`
+- `GET/POST/DELETE /api/acc/devices[/{id}]`
+- `GET/POST /api/acc/subscriptions` `{token, plan, amount, unit}` (unit: days/months/years)
+- `GET /api/acc/plans`              Game Pass tier catalog
+- `POST /api/acc/giftcards/generate` `{token, plan, amount, unit, count}`
+- `POST /api/acc/giftcards/redeem`  `{token, code}`
+- `GET /api/acc/giftcards`
+- `GET/POST /api/acc/wallet`
+- `GET/POST /api/acc/friends`
+- `GET /api/acc/activity`
+- `POST /api/goai`          `{message}` -> `{reply, suggestions}`
+- `GET /api/info`           console metadata
 
-The site is a client for the GoConsoleOS server REST API (`/api/acc/*`, `/api/goai`, `/api/info`)
-that runs **inside** every GoConsoleOS console on port `39210`:
+## Local preview
 
-- `http://localhost:39210/` — open on the console itself (served by the console)
-- `http://<console-ip>:39210/` — from any browser on the LAN
-- On GitHub Pages, pass `?host=<console-ip>` to point the page at a console
-
-If no console is reachable the UI still renders and explains how to connect.
-
-## Files
-
-| File        | Purpose                              |
-|-------------|--------------------------------------|
-| `index.html`| Single-page dashboard markup        |
-| `acc.css`   | Styling (dark console theme)         |
-| `acc.js`    | API client, auth flow and rendering  |
-
-## Repos
-
-- **GoConsoleOS** — desktop USB gaming console (GoConsole.exe / GoConsoleOS.exe) with the built-in server
-- **GoConsoleOS-Android** — portable companion app with an on-device server too
-- **GoConsoleOS-Web** — this site
-
----
-
-## License
-
-Copyright © 2026 GoStudios. All rights reserved.
-
-**GoConsoleOS™** and the **GoConsoleOS logo** are trademarks of GoStudios. Map tiles © OpenStreetMap contributors (ODbL).
+```powershell
+# serve the site + API together
+dotnet run --project src/GoConsole -- # then open http://localhost:39210
+```

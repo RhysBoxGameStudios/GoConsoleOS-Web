@@ -61,6 +61,21 @@ const api = {
 
 /* ---------- demo store (localStorage fallback when no console is reachable) ---------- */
 
+const DEMO_PLANS = [
+  { id: "free", name: "Game Pass Free", emoji: "🎮", color: "#4A4F5A", perks: ["Free games rotation", "Community features", "Basic cloud saves"] },
+  { id: "pro", name: "Game Pass Pro", emoji: "🟢", color: "#2ECC71", perks: ["Everything in Free", "Play all Game Pass titles", "Exclusive deals & rewards"] },
+  { id: "plus", name: "Game Pass Plus", emoji: "🔵", color: "#3D9BFF", perks: ["Everything in Pro", "Early access to new releases", "1,000 GoPoints monthly"] },
+  { id: "premium", name: "Game Pass Premium", emoji: "🟣", color: "#7C5CFF", perks: ["Everything in Plus", "Cloud streaming & remote play", "Day-one triple-A titles"] },
+  { id: "ultimate", name: "Game Pass Ultimate", emoji: "👑", color: "#FFC800", perks: ["Everything in Premium", "All DLC & expansions included", "Controller + GoPoints bonuses", "VIP support & giveaways"] },
+];
+
+const gc = (prefix) => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return prefix ? prefix : s;
+};
+
 const DEMO = (() => {
   const KEY = "gcos_demo_db";
   const load = () => {
@@ -165,10 +180,14 @@ const DEMO = (() => {
 
       if (endpoint === "subscriptions") {
         if (method === "POST") {
+          const amount = parseInt(b.amount, 10) || 1;
+          const unit = b.unit || "days";
+          const days = unit === "months" ? amount * 30 : unit === "years" ? amount * 365 : amount;
           const startedAt = new Date().toISOString();
           const sub = {
             id: uid("s_"), plan: b.plan, tier: b.plan, isActive: true,
-            startedAt, expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+            startedAt, expiresAt: new Date(Date.now() + days * 86400000).toISOString(),
+            durationDays: days, source: "manual",
           };
           user.subscriptions = user.subscriptions || [];
           user.subscriptions.push(sub);
@@ -176,6 +195,48 @@ const DEMO = (() => {
         }
         return Promise.resolve({ ok: true, subscriptions: user.subscriptions || [] });
       }
+
+      if (endpoint === "plans")
+        return Promise.resolve({ ok: true, plans: DEMO_PLANS });
+
+      if (endpoint === "giftcards/generate" && method === "POST") {
+        const amount = parseInt(b.amount, 10) || 30;
+        const unit = b.unit || "days";
+        const days = unit === "months" ? amount * 30 : unit === "years" ? amount * 365 : amount;
+        const cards = [];
+        const count = Math.min(parseInt(b.count, 10) || 1, 50);
+        for (let i = 0; i < count; i++) {
+          const tier = b.plan || "pro";
+          const code = gc("GC") + "-" + gc("") + "-" + gc("") + "-" + gc("");
+          db.giftcards = db.giftcards || [];
+          db.giftcards.push({ code, tier, durationDays: days, createdAt: new Date().toISOString(), isRedeemed: false });
+          cards.push({ code, tier, durationDays: days });
+        }
+        save(db);
+        return Promise.resolve({ ok: true, giftCards: cards });
+      }
+
+      if (endpoint === "giftcards/redeem" && method === "POST") {
+        db.giftcards = db.giftcards || [];
+        const card = db.giftcards.find((c) => c.code.toLowerCase() === (b.code || "").toLowerCase());
+        if (!card) return Promise.resolve({ ok: false, error: "That gift card code is invalid." });
+        if (card.isRedeemed) return Promise.resolve({ ok: false, error: "That gift card code has already been used." });
+        card.isRedeemed = true;
+        card.redeemedBy = user.username;
+        const startedAt = new Date().toISOString();
+        const sub = {
+          id: uid("s_"), plan: card.tier, tier: card.tier, isActive: true,
+          startedAt, expiresAt: new Date(Date.now() + card.durationDays * 86400000).toISOString(),
+          durationDays: card.durationDays, source: "giftcard",
+        };
+        user.subscriptions = user.subscriptions || [];
+        user.subscriptions.push(sub);
+        saveUser(user); save(db);
+        return Promise.resolve({ ok: true, message: "Redeemed " + card.tier + " for " + card.durationDays + " day(s)!", subscription: sub, subscriptions: user.subscriptions });
+      }
+
+      if (endpoint === "giftcards" && method === "GET")
+        return Promise.resolve({ ok: true, giftCards: db.giftcards || [] });
 
       if (endpoint === "activity")
         return Promise.resolve({ ok: true, activity: user.activity || [] });
@@ -352,18 +413,40 @@ function renderWallet() {
 }
 
 function renderSubscriptions() {
+  renderPlanPicker();
   const el = $("subList");
   el.innerHTML = "";
   const subs = profile.subscriptions || [];
-  if (!subs.length) el.innerHTML = '<div class="list-empty">No subscriptions.</div>';
-  subs.forEach((s) => {
+  if (!subs.length) el.innerHTML = '<div class="list-empty">No subscriptions yet. Pick a plan or redeem a gift card.</div>';
+  subs.slice().reverse().forEach((s) => {
     const item = document.createElement("div");
     item.className = "list-item";
     item.innerHTML =
       "<div><strong>" + esc(s.tier || s.plan) + "</strong><div class='meta'>since " +
-      new Date(s.startedAt).toLocaleDateString() + (s.expiresAt ? " &middot; until " + new Date(s.expiresAt).toLocaleDateString() : "") + "</div></div>" +
+      new Date(s.startedAt).toLocaleDateString() + (s.expiresAt ? " &middot; until " + new Date(s.expiresAt).toLocaleDateString() : "") +
+      (s.source ? " &middot; via " + esc(s.source) : "") + "</div></div>" +
       (s.isActive ? '<span class="tag active">Active</span>' : '<span class="tag">Ended</span>');
     el.appendChild(item);
+  });
+}
+
+async function renderPlanPicker() {
+  const el = $("planPicker");
+  if (!el) return;
+  const data = await api.call("plans", "GET", { token });
+  const plans = (data && data.plans) || DEMO_PLANS;
+  el.innerHTML = plans.filter((p) => p.id !== "free").map((p) =>
+    '<div class="plan-card" style="border-color:' + esc(p.color) + '" data-plan="' + esc(p.id) + '">' +
+    '<div class="plan-emoji">' + esc(p.emoji) + "</div>" +
+    "<div><strong>" + esc(p.name) + "</strong><div class='meta'>" +
+    (p.perks || []).slice(0, 2).join(" &middot; ") + "</div></div></div>"
+  ).join("");
+  el.querySelectorAll(".plan-card").forEach((card) => {
+    card.onclick = () => {
+      el.querySelectorAll(".plan-card").forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
+      $("subPlan").value = card.dataset.plan;
+    };
   });
 }
 
@@ -472,8 +555,49 @@ async function addPoints() {
 
 async function subscribe() {
   const plan = $("subPlan").value;
-  await api.call("subscriptions", "POST", { token, plan });
+  const amount = parseInt($("subAmount").value, 10) || 1;
+  const unit = $("subUnit").value;
+  const data = await api.call("subscriptions", "POST", { token, plan, amount, unit });
+  if (data.ok) refreshDashboard();
+  else if ($("gcMsg")) $("gcMsg").textContent = data.error || "";
+}
+
+async function redeemGiftCard() {
+  const code = $("gcCode").value.trim();
+  if (!code) return;
+  const data = await api.call("giftcards/redeem", "POST", { token, code });
+  if (data.ok) {
+    if ($("gcMsg")) $("gcMsg").textContent = "✓ " + (data.message || "Gift card redeemed!");
+    $("gcCode").value = "";
+  } else {
+    if ($("gcMsg")) $("gcMsg").textContent = data.error || "Redemption failed.";
+  }
   refreshDashboard();
+}
+
+async function generateGiftCards() {
+  const plan = $("genPlan").value;
+  const amount = parseInt($("genAmount").value, 10) || 30;
+  const unit = $("genUnit").value;
+  const count = parseInt($("genCount").value, 10) || 1;
+  const data = await api.call("giftcards/generate", "POST", { token, plan, amount, unit, count });
+  if (data.ok && data.giftCards) {
+    const el = $("genList");
+    el.innerHTML = "";
+    data.giftCards.forEach((c) => {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      item.innerHTML = "<div><strong>" + esc(c.code) + "</strong><div class='meta'>" +
+        esc(c.tier) + " &middot; " + esc(c.durationDays) + " days</div></div>" +
+        '<button class="ghost" data-code="' + esc(c.code) + '">Copy</button>';
+      el.appendChild(item);
+    });
+    el.querySelectorAll("[data-code]").forEach((btn) => {
+      btn.onclick = () => { navigator.clipboard.writeText(btn.dataset.code); btn.textContent = "Copied"; };
+    });
+  } else if (data.error) {
+    if ($("gcMsg")) $("gcMsg").textContent = data.error;
+  }
 }
 
 async function addFriend() {
@@ -552,6 +676,9 @@ $("btnAddDevice").onclick = addDevice;
 $("t2fa").onchange = toggle2fa;
 $("btnAddPoints").onclick = addPoints;
 $("btnSub").onclick = subscribe;
+$("btnRedeem").onclick = redeemGiftCard;
+$("gcCode").onkeydown = (e) => { if (e.key === "Enter") redeemGiftCard(); };
+$("btnGen").onclick = generateGiftCards;
 $("btnAddFriend").onclick = addFriend;
 $("btnGoAi").onclick = sendGoAi;
 $("goaiInput").onkeydown = (e) => { if (e.key === "Enter") sendGoAi(); };
